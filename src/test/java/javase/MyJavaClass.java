@@ -1,6 +1,9 @@
 package javase;
 
 
+import java.io.InputStream;
+
+import org.apache.hadoop.hdfs.client.HdfsClientConfigKeys.Write;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -163,14 +166,14 @@ public class MyJavaClass {
  	}
 	
 	
-	
-	
-	
-	
-	
-	
-	//test git commit
-	
+	//Test
+	 @Test
+	 public void Test() {
+		System.out.println("order_20190625.txt".substring(0, 5)); //true
+	   
+
+	}
+
 
 	
 	 	
