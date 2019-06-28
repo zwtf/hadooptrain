@@ -3,10 +3,13 @@ package mapreduce;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
+
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -18,6 +21,8 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.junit.Test;
+import org.junit.experimental.theories.suppliers.TestedOn;
 
 
 
@@ -54,45 +59,61 @@ P0005 HuaWEi
  */
 
 
-public class JoinBean {
+public class JoinBeanTest {
+	
+	
 	
 	public static void main(String[] args) throws Exception {
 		 Configuration conf = new Configuration();
+		 
+		 	//判断输入文件夹是否存在,,不存在就退出程序
+			//判断输出文件夹是否存在,存在即删除	
+		 	 Path outPathput = new Path(args[1]);
+			 FileSystem FSOutput = FileSystem.get(URI.create(args[1]), conf);
+			 System.out.println( FSOutput.exists(outPathput) ? "---true---" : "---false---");
+			 if (FSOutput.exists(outPathput)) {
+				System.out.println("Path Exists! deleted!");
+				 System.out.println( FSOutput.exists(outPathput) ? "---true---" : "---false---");
+				FSOutput.delete(outPathput, true);
+			}else {
+				System.out.println( FSOutput.exists(outPathput) ? "---true---" : "---false---");	
+			}
+		 
 		 Job job = Job.getInstance(conf);
-		 job.setJarByClass(JoinBean.class);
+		 job.setJarByClass(JoinBeanTest.class);
 
-		 job.setMapperClass(JoinBeanMapper.class);
-		 job.setReducerClass(JoinBeanReducer.class);
+		 job.setMapperClass(JoinBeanTestMapper.class);
+//		 job.setReducerClass(JoinBeanTestReducer.class);
 
 		 job.setMapOutputKeyClass(Text.class);
-		 job.setMapOutputValueClass(OrderBean.class);
+		 job.setMapOutputValueClass(OrderBeanTest.class);
 
-		 job.setOutputKeyClass(OrderBean.class);
+		 job.setOutputKeyClass(OrderBeanTest.class);
 		 job.setOutputValueClass(NullWritable.class);
 
 		 FileInputFormat.setInputPaths(job, new Path(args[0]));
 		 FileOutputFormat.setOutputPath(job, new Path(args[1]));
-
+  
 		 boolean res = job.waitForCompletion(true);
 		 System.exit(res?0:1);
 		 }
 	
-	static class JoinBeanMapper extends Mapper<LongWritable, Text, Text, OrderBean>{
-		OrderBean orderBean  = new OrderBean();  //  ----
+	static class JoinBeanTestMapper extends Mapper<LongWritable, Text, Text, OrderBeanTest>{
+		OrderBeanTest OrderBeanTest  = new OrderBeanTest();  //  ----
 		@Override
-		protected void setup(Mapper<LongWritable, Text, Text, OrderBean>.Context context)
+		protected void setup(Mapper<LongWritable, Text, Text, OrderBeanTest>.Context context)
 					throws IOException, InterruptedException {
 
 			}
 		protected void map(LongWritable key, Text value,
-				org.apache.hadoop.mapreduce.Mapper<LongWritable,Text,Text,OrderBean>.Context context) 
+				org.apache.hadoop.mapreduce.Mapper<LongWritable,Text,Text,OrderBeanTest>.Context context) 
 						throws IOException ,InterruptedException {
 			 String line = value.toString();
 			 String[] s = line.split("\t");
 			 int oId = 0; 						// ----
-			 String pid = "";
+			 String pid = "Unknown";
 			 int volume = 0;
-			 String brand = "";
+			 String brand = "Unknown";
 			 FileSplit fileSplit= (FileSplit)context.getInputSplit();
 			 //根据名称判断文件类型,并创建自定义类
 			String name = fileSplit.getPath().getName();
@@ -100,54 +121,80 @@ public class JoinBean {
 				oId = Integer.parseInt(s[0]);
 				pid = s[1];
 				volume = Integer.parseInt(s[2]);
-				orderBean.set(oId,pid,volume,"","0");
+				OrderBeanTest.set(oId,pid,volume,brand,"0");
 			}
 			else {				
 				pid=s[0];
 				brand = s[1];
-				orderBean.set(0,pid,0,brand,"1");
+				OrderBeanTest.set(0,pid,0,brand,"1");
 			}
-			 context.write(new Text(pid), orderBean);
-			
-		};
+			 context.write(new Text(pid), OrderBeanTest);	
+		}
 	}
 	
-	 static class JoinBeanReducer extends Reducer<Text, OrderBean, OrderBean, NullWritable>{
-		
-		 @Override
-		 protected void reduce(Text name, Iterable<OrderBean> beans,
-				Reducer<Text, OrderBean, OrderBean, NullWritable>.Context context)
+	static class JoinBeanTestReducer extends Reducer<Text, OrderBeanTest, OrderBeanTest, NullWritable>{
+		@Override
+		protected void reduce(Text arg0, Iterable<OrderBeanTest> arg1,
+				Reducer<Text, OrderBeanTest, OrderBeanTest, NullWritable>.Context context)
 				throws IOException, InterruptedException {
-			 //根据flag判断键值对类型,把product文件放进一个数组
-			 OrderBean pdBean = new OrderBean();
-			 ArrayList<OrderBean> orderBeans = new ArrayList<OrderBean>();
-			 try {
-			 for (OrderBean bean : beans) {
-			 // product
-			if ("1".equals(bean.getFlag())) {
-			 BeanUtils.copyProperties(pdBean, bean);
-			 }else{
-			 OrderBean odbean = new OrderBean();
-			 BeanUtils.copyProperties(odbean, bean);
-			 orderBeans.add(odbean);
-			 }
-			 }
-			 } catch (Exception e) {
-			 }
-			 
-			 for(OrderBean bean : orderBeans){
-				 if (bean.getpId() == "") {	
-					 bean.set(100, "pid", 200, "is", "null!");
-				}
-			 bean.setBrand(pdBean.getBrand());
-			 context.write(bean, NullWritable.get());
-			 }
-			 }
-			 
+			for (OrderBeanTest obt : arg1) {
+				context.write(obt,NullWritable.get());
+			}
 		}
-	 }
+	}
 	
-	 class OrderBean implements Writable{
+//	 static class JoinBeanTestReducer extends Reducer<Text, OrderBeanTest, OrderBeanTest, NullWritable>{
+//		
+//		 @Override
+//		 protected void reduce(Text name, Iterable<OrderBeanTest> beans,
+//				Reducer<Text, OrderBeanTest, OrderBeanTest, NullWritable>.Context context)
+//				throws IOException, InterruptedException {
+//			 //根据flag判断键值对类型,把product文件放进一个数组
+//			 String brand = "UNKNOWN";
+//			 ArrayList<OrderBeanTest> OrderBeanTests = new ArrayList<OrderBeanTest>();
+//			 try {
+//			 for (OrderBeanTest bean : beans) {
+//			 // product
+//			if ("1".equals(bean.getFlag())) {
+//				 brand = bean.getBrand();
+//
+//			 }
+//			context.write(bean, NullWritable.get());
+////			else{
+//////				 OrderBeanTest odbean = new OrderBeanTest();
+//////				 BeanUtils.copyProperties(odbean, bean);
+////				 OrderBeanTests.add(bean);
+////			 }
+//			 }
+////				for (OrderBeanTest  bean1: OrderBeanTests) {
+////					
+////					 context.write(bean1, NullWritable.get());
+////				}
+////			 for (OrderBeanTest bean1 : beans) {
+//////				if ("0".equals(bean1.getFlag())) {
+////					 bean1.setBrand(brand);
+////					 context.write(bean1, NullWritable.get());
+//////				 }
+////				}
+//			 } catch (Exception e) {
+//			 }
+//
+////			 for(OrderBeanTest bean : OrderBeanTests){
+//////				 if (bean.getpId() == "") {	
+//////					 bean.set(100, "pid", 200, "is", "null!");
+//////				}
+////			 bean.setBrand(brand);
+////			 context.write(bean, NullWritable.get());
+////			 }
+//			 }
+//			 
+//		}
+//
+//
+//		
+}
+	
+	 class OrderBeanTest implements Writable{
 
 		int oId ;
 		String pId;
@@ -214,16 +261,12 @@ public class JoinBean {
 			this.brand = brand;
 		} 
 		
-		public Object getFlag() {
-			// TODO Auto-generated method stub
-			return null;
+		public String getFlag() {
+			return flag;
 		}
 		
 		@Override
 			public String toString() {
-				return oId + " " + pId + " " + volume + " " + brand + " " + flag + " ";
+				return oId + " " + pId + " " + volume + " " + brand + " " + flag;
 			}
-		
-	}
-	
-
+}

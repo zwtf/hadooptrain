@@ -21,6 +21,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+
 /**
  * 调用JAVA API访问HDFS目录执行文件/文件夹操作
  * @author wx
@@ -34,6 +35,9 @@ public class HDFSApp {
 	FileSystem fileSystem = null;
 	FileSystem fs = null;
 	Configuration configuration = null;
+	
+	
+	
 	
 	@Before
 	public void	Setup() throws IOException, InterruptedException, URISyntaxException {
@@ -184,7 +188,29 @@ public class HDFSApp {
 		
 	}
 	
+ 	//判断输入文件夹是否存在
+	//判断输出文件夹是否存在,存在即删除	
+	@Test
+	public void CheckArgs() throws IOException {
 	
+ 	 Configuration conf2 = new Configuration();
+	 Path inputPath = new Path("/input/orderbean");
+	 Path outPathput = new Path("/output/orderjoin_2");
+	 FileSystem FSInput = FileSystem.get(URI.create("/input/orderbean"), conf2);
+	 FileSystem FSOutput = FileSystem.get(URI.create("/output/orderjoin_2"), conf2);
+
+	 boolean isInputExists = fileSystem.exists(inputPath);
+	 boolean isOutputExists = fileSystem.exists(outPathput);
+	 
+	 if (!isInputExists) {
+		 System.out.println("Input Path  not Exists! quit!");
+	}
+	 
+	 if (isOutputExists) {
+		System.out.println("Path Exists! deleted!");
+		fileSystem.delete(outPathput, true);
+	}
+	}
 	
 	@After
 	public void  TearDown() throws IOException {
