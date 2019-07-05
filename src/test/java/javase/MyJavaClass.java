@@ -3,6 +3,8 @@ package javase;
 
 import java.io.InputStream;
 
+import javax.imageio.stream.IIOByteBuffer;
+
 import org.apache.hadoop.hdfs.client.HdfsClientConfigKeys.Write;
 import org.junit.After;
 import org.junit.Before;
@@ -177,17 +179,67 @@ public class MyJavaClass {
 
 	
 	 	
-	 	
+	@Test 	
+	public void test() {
+		
+		Byte byte1 =Byte.parseByte("030");
+		System.out.println(byte1);				//30
+		System.out.println(byte1.toString());	//30
+		System.out.println(byte1.byteValue());	//30
+		int a = 10;		
+		int b = 10;
+		System.out.printf("%d",a++);
+		System.out.printf("%d",a++);
+		System.out.println(a < b);				//false
+		System.out.println(a < ++b);			//true	
+		System.out.println(a < b++);			//true
+	}
 	
+	/*
+	 * 编写for循环找出1-100中的所有素数
+	 * 
+	 * 	素数:只能被1和自己整除的数
+	 * 	能整除的数取余就为0 
+	 * 		思路:循环取除数和被除数,只要发现余数为0,则结束内部循环,并把信息传递给外部循环,外部循环输出,并开始下一次循环
+	 * 		每8个换行思路:同样的标记思路,每次输出前判断,如果前面有8个就换行输出一次
+	 */
+	@Test
+	public  void findShuSu() {
+//		Integer[] i =null;
+//		System.out.println(1);
+		int rowFlag = 0;
+		for (int j = 1; j < 100; j++) {
+			int flag = 1;
+			for (int x = 2 ; x < j ; x++) {
+				   if (j%x == 0) {flag = 0;break;}
+//				   if(flag == 0)break; //这段代码可以不要
+			}
+			   if (flag == 1) { 
+				   rowFlag++;
+				   if(rowFlag%8 != 0)System.out.print(j + " ");
+				   else System.out.println(j);
+				   }
+		}
+		
+		
+	}
 	
-	
-	
+	//输出99乘法表
+	@Test
+	public void ChengFaBiao() {
+		for (int i = 1; i < 10; i++) {
+			for (int j = 1; j <= i; j++) {
+				System.out.print(j + "*" + i + "=" +  i*j + " ");
+			}
+			System.out.println();
+		}
+	}
 	
 	
 	//测试单元  : methods declared in superclasses will be run after those of the current
 	@After
 	public void TearDown() {
-		
+
 	}
 
  }
